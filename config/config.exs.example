@@ -1,0 +1,7 @@
+use Mix.Config
+
+config :nadia,
+  token: "telegram_api_token"
+
+config :bloom,
+  double_echo: "hi"
