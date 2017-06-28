@@ -4,4 +4,5 @@ config :nadia,
   token: "telegram_api_token"
 
 config :bloom,
-  double_echo: "hi"
+  flush: true,
+  double_echo: true

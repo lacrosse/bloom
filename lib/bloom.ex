@@ -8,6 +8,6 @@ defmodule Bloom do
       worker(Task, [Bloom.Bot, :run, []])
     ]
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: Bloom.Supervisor)
+    Supervisor.start_link(children, max_restarts: 30, strategy: :one_for_one, name: Bloom.Supervisor)
   end
 end
