@@ -40,16 +40,33 @@ defmodule Bloom.Bot do
     ack(message)
 
     new_subhistory =
-      if message.text == Map.get(history, chat.id, @reset) && @double_echo do
-        {:ok, my_message} = Nadia.send_message chat.id, message.text
-        ack(my_message)
-        @reset
-      else
-        message.text
+      cond do
+        message.text |> String.starts_with?("/eth ") ->
+          <<"/eth ", eth_entity::binary>> = message.text
+          reply =
+            case eth_entity do
+              "me" ->
+                Bloom.Eth.describe("me", message.from.id)
+              _ ->
+                Bloom.Eth.describe(eth_entity)
+            end
+          {:ok, my_message} = Nadia.send_message chat.id, reply
+          ack(my_message)
+          @reset
+        message.text == Map.get(history, chat.id, @reset) && @double_echo ->
+          {:ok, my_message} = Nadia.send_message chat.id, message.text
+          ack(my_message)
+          @reset
+        true ->
+          message.text
       end
 
     with new_history = Map.put(history, chat.id, new_subhistory),
          do: {update_id + 1, new_history}
+  end
+  defp ack_and_reply(%Nadia.Model.Update{update_id: update_id, message: message}, history) when is_nil(message) do
+    ack(message)
+    {update_id + 1, history}
   end
 
   defp describe_message(%Nadia.Model.Message{chat: chat, date: date, from: from, text: text, photo: photo}) do
@@ -58,6 +75,9 @@ defmodule Bloom.Bot do
     "<#{describe_user(from)}>" <>
     "#{if length(photo) > 0, do: " [photo]"}" <>
     "#{if text, do: " #{text}"}"
+  end
+  defp describe_message(_) do
+    "# Invalid message"
   end
 
   defp describe_chat(chat) do
