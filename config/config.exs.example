@@ -5,4 +5,5 @@ config :nadia,
 
 config :bloom,
   flush: true,
-  double_echo: true
+  double_echo: true,
+  lastfm_api_key: true

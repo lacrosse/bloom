@@ -15,16 +15,22 @@ defmodule Bloom.Bot do
       {:ok, updates} ->
         updates |> Enum.each(&ack(&1.message))
         flush(List.last(updates).update_id + 1)
+      {:error, error} ->
+        error |> IO.inspect()
+        flush(offset)
     end
   end
 
   defp poll(offset \\ nil, history \\ %{}) do
-    case Nadia.get_updates(offset: offset, limit: 1, timeout: 20) do
+    case Nadia.get_updates(offset: offset, limit: 1) do
       {:ok, []} ->
         poll(offset, history)
       {:ok, updates} ->
         {new_offset, new_history} = many_ack_and_reply(updates, history)
         poll(new_offset, new_history)
+      {:error, error} ->
+        error |> IO.inspect()
+        :ok
     end
   end
 
@@ -41,14 +47,29 @@ defmodule Bloom.Bot do
 
     new_subhistory =
       cond do
-        message.text |> String.starts_with?("/eth ") ->
-          <<"/eth ", eth_entity::binary>> = message.text
+        message.text |> String.starts_with?("/eth") ->
           reply =
-            case eth_entity do
-              "me" ->
-                Bloom.Eth.describe("me", message.from.id)
+            case message.text do
+              "/eth " <> eth_entity ->
+                case eth_entity do
+                  "me" ->
+                    Bloom.Eth.describe("me", message.from.id)
+                  _ ->
+                    Bloom.Eth.describe(eth_entity)
+                end
+            end
+          {:ok, my_message} = Nadia.send_message chat.id, reply
+          ack(my_message)
+          @reset
+        message.text |> String.starts_with?("/lastfm") ->
+          reply =
+            case message.text do
+              "/lastfm" ->
+                Bloom.LastFM.describe(message.from.id)
+              "/lastfm " <> username ->
+                Bloom.LastFM.get_recent(username)
               _ ->
-                Bloom.Eth.describe(eth_entity)
+                "get lost"
             end
           {:ok, my_message} = Nadia.send_message chat.id, reply
           ack(my_message)

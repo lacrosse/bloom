@@ -3,7 +3,7 @@ defmodule Bloom.Mixfile do
 
   def project do
     [app: :bloom,
-     version: "0.0.1",
+     version: "0.0.2",
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -17,7 +17,7 @@ defmodule Bloom.Mixfile do
 
   defp deps do
     [
-      {:nadia, "~> 0.3"},
+      {:nadia, "~> 0.4.2"},
       {:httpoison, "~> 0.12"},
       {:poison, "~> 3.1", runtime: false},
       {:decimal, "~> 1.0", runtime: false}
