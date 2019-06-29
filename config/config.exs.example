@@ -6,4 +6,6 @@ config :nadia,
 config :bloom,
   flush: true,
   double_echo: true,
-  lastfm_api_key: true
+  lastfm_api_key: true,
+  darksky_secret_key: true,
+  opencage_api_key: true

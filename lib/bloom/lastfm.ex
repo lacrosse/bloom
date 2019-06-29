@@ -1,4 +1,5 @@
 defmodule Bloom.LastFM do
+  @endpoint "https://ws.audioscrobbler.com/2.0"
   @api_key Application.fetch_env!(:bloom, :lastfm_api_key)
   @users %{
   }
@@ -6,15 +7,16 @@ defmodule Bloom.LastFM do
   def describe(telegram_user_id) do
     case Map.get(@users, telegram_user_id) do
       nil ->
-        IO.inspect "Telegram user #{telegram_user_id} tried to use last.fm"
+        IO.inspect("Telegram user #{telegram_user_id} tried to use last.fm")
         "это кто"
+
       username ->
         get_recent(username)
     end
   end
 
   def get_recent(username) do
-    case HTTPoison.get("https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=#{username}&api_key=#{@api_key}&limit=1&format=json") do
+    case request_getrecenttracks(username) do
       {:ok, %HTTPoison.Response{body: body}} ->
         with {:ok, parsed} = Poison.decode(body),
              tracks <- parsed["recenttracks"]["track"],
@@ -36,9 +38,25 @@ defmodule Bloom.LastFM do
 
           "#{emoji} #{artist} – #{name}"
         end
-      {:error, error} ->
-        :error
+
+      {:error, _error} ->
         "сорян(("
     end
+  end
+
+  defp request_getrecenttracks(username),
+    do: request("user.getrecenttracks", %{user: username, limit: 1})
+
+  defp request(method, args) do
+    query =
+      %{
+        api_key: @api_key,
+        method: method,
+        format: :json
+      }
+      |> Map.merge(args)
+      |> URI.encode_query()
+
+    HTTPoison.get("#{@endpoint}/?#{query}")
   end
 end
