@@ -2,9 +2,7 @@ defmodule Bloom.Weather do
   @darksky_secret_key Application.fetch_env!(:bloom, :darksky_secret_key)
   @opencage_api_key Application.fetch_env!(:bloom, :opencage_api_key)
 
-  def describe(query) do
-    forecast(query)
-  end
+  def describe(query), do: forecast(query)
 
   defp forecast(query) do
     case query |> geocode_query() do
@@ -15,7 +13,7 @@ defmodule Bloom.Weather do
         url_query =
           %{
             exclude:
-              ~w[minutely hourly daily alerts flags]
+              ~w[minutely hourly daily]
               |> Enum.join(","),
             lang: :ru,
             units: :si
@@ -36,14 +34,37 @@ defmodule Bloom.Weather do
                 temperature = currently["temperature"]
                 temperature_string = "#{temperature}°C"
 
-                case currently["summary"] do
-                  nil ->
-                    temperature_string
+                temperature_block =
+                  case currently["summary"] do
+                    nil ->
+                      [temperature_string]
 
-                  summary ->
-                    normalized_summary = summary |> String.downcase()
-                    "#{temperature_string}, #{normalized_summary}"
-                end
+                    summary ->
+                      normalized_summary = summary |> String.downcase()
+                      ["#{temperature_string}, #{normalized_summary}"]
+                  end
+
+                alerts_block =
+                  case parsed["alerts"] do
+                    nil ->
+                      []
+
+                    [] ->
+                      []
+
+                    alerts ->
+                      alerts_description =
+                        alerts
+                        |> Enum.map(fn %{"title" => title, "description" => description} ->
+                          "*#{title}*\n#{description}"
+                        end)
+                        |> Enum.join("\n")
+
+                      [alerts_description]
+                  end
+
+                (temperature_block ++ alerts_block)
+                |> Enum.join("\n\n")
             end
 
           {:error, _error} ->
@@ -58,8 +79,8 @@ defmodule Bloom.Weather do
 
     url_query =
       %{
-        q: escaped_query,
         key: @opencage_api_key,
+        q: escaped_query,
         limit: 1
       }
       |> URI.encode_query()

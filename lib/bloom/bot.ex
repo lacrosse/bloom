@@ -66,7 +66,9 @@ defmodule Bloom.Bot do
                     Bloom.Weather.describe(query)
                 end
 
-              {:ok, my_message} = Nadia.send_message(message.chat.id, reply)
+              {:ok, my_message} =
+                Nadia.send_message(message.chat.id, reply, parse_mode: "Markdown")
+
               echo_locally(my_message)
               @reset
 
