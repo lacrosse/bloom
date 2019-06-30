@@ -67,7 +67,10 @@ defmodule Bloom.Bot do
                 end
 
               {:ok, my_message} =
-                Nadia.send_message(message.chat.id, reply, parse_mode: "Markdown")
+                Nadia.send_message(message.chat.id, reply,
+                  parse_mode: "Markdown",
+                  disable_web_page_preview: "True"
+                )
 
               echo_locally(my_message)
               @reset

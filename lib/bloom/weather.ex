@@ -55,8 +55,12 @@ defmodule Bloom.Weather do
                     alerts ->
                       alerts_description =
                         alerts
-                        |> Enum.map(fn %{"title" => title, "description" => description} ->
-                          "*#{title}*\n#{description}"
+                        |> Enum.map(fn %{
+                                         "title" => title,
+                                         "description" => description,
+                                         "uri" => url
+                                       } ->
+                          "[#{title}](#{url})\n#{description}"
                         end)
                         |> Enum.join("\n")
 
