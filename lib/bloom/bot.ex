@@ -98,8 +98,12 @@ defmodule Bloom.Bot do
                   "/lastfm" ->
                     Bloom.LastFM.describe(message.from.id)
 
-                  "/lastfm " <> username ->
+                  "/lastfm np " <> username ->
                     Bloom.LastFM.get_recent(username)
+
+                  "/lastfm ident " <> username ->
+                    Bloom.LastFM.User.memorize(message.from.id, String.trim(username))
+                    "ok"
 
                   _ ->
                     "get lost"

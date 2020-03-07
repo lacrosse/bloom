@@ -6,9 +6,14 @@ defmodule Bloom do
 
     children = [
       worker(Task, [Bloom.Bot, :run, []]),
-      worker(Bloom.Eth.User, [])
+      worker(Bloom.Eth.User, []),
+      worker(Bloom.LastFM.User, [])
     ]
 
-    Supervisor.start_link(children, max_restarts: 30, strategy: :one_for_one, name: Bloom.Supervisor)
+    Supervisor.start_link(children,
+      max_restarts: 30,
+      strategy: :one_for_one,
+      name: Bloom.Supervisor
+    )
   end
 end

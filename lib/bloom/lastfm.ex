@@ -1,11 +1,9 @@
 defmodule Bloom.LastFM do
   @endpoint "https://ws.audioscrobbler.com/2.0"
   @api_key Application.fetch_env!(:bloom, :lastfm_api_key)
-  @users %{
-  }
 
   def describe(telegram_user_id) do
-    case Map.get(@users, telegram_user_id) do
+    case Bloom.LastFM.User.username(telegram_user_id) do
       nil ->
         IO.inspect("Telegram user #{telegram_user_id} tried to use last.fm")
         "это кто"
@@ -44,8 +42,25 @@ defmodule Bloom.LastFM do
     end
   end
 
+  def get_artist(username, artist) do
+    case(request_artist_getinfo(username, artist)) do
+      {:ok, %HTTPoison.Response{body: body}} ->
+        with {:ok, parsed} = Poison.decode(body),
+             stats <- parsed["artist"]["stats"],
+             count = stats["userplaycount"] do
+          "#{username} scrobbled #{artist} #{count} times"
+        end
+
+      {:error, _error} ->
+        "::("
+    end
+  end
+
   defp request_getrecenttracks(username),
     do: request("user.getrecenttracks", %{user: username, limit: 1})
+
+  defp request_artist_getinfo(username, artist),
+    do: request("artist.getinfo", %{artist: artist, username: username})
 
   defp request(method, args) do
     query =
