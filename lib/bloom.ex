@@ -5,15 +5,25 @@ defmodule Bloom do
     import Supervisor.Spec, warn: false
 
     children = [
-      worker(Task, [Bloom.Bot, :run, []]),
-      worker(Bloom.Eth.User, []),
-      worker(Bloom.LastFM.User, [])
+      %{
+        id: Bloom.Bot.Task,
+        start: {Task, :start_link, [Bloom.Bot, :run, []]}
+      },
+      %{
+        id: Bloom.External.Eth.User,
+        start: {Bloom.External.Eth.User, :start_link, []}
+      },
+      %{
+        id: Bloom.External.LastFM.User,
+        start: {Bloom.External.LastFM.User, :start_link, []}
+      }
     ]
 
-    Supervisor.start_link(children,
-      max_restarts: 30,
-      strategy: :one_for_one,
-      name: Bloom.Supervisor
-    )
+    {:ok, _pid} =
+      Supervisor.start_link(children,
+        max_restarts: 30,
+        strategy: :one_for_one,
+        name: Bloom.Supervisor
+      )
   end
 end

@@ -18,10 +18,11 @@ defmodule Bloom.Mixfile do
 
   defp deps do
     [
-      {:nadia, "~> 0.6.0"},
-      {:httpoison, "~> 1.6.2"},
+      {:nadia, "~> 0.7.0"},
+      {:httpoison, "~> 1.7.0"},
       {:poison, "~> 3.1", runtime: false},
-      {:decimal, "~> 1.0", runtime: false}
+      {:decimal, "~> 1.0", runtime: false},
+      {:jason, "~> 1.2.2"}
     ]
   end
 end

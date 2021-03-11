@@ -1,6 +1,5 @@
 defmodule Bloom.Bot do
-  @reset :reset
-  @double_echo Application.fetch_env!(:bloom, :double_echo)
+  @type history :: %{integer => :reset | String.t()}
 
   def run do
     :ok = flush()
@@ -43,102 +42,42 @@ defmodule Bloom.Bot do
     end
   end
 
-  defp echo_locally(message),
-    do: message |> describe_message() |> IO.puts()
+  defp echo_locally(message), do: message |> describe_message() |> IO.puts()
 
-  defp ack_and_reply(
-         %Nadia.Model.Update{update_id: update_id, message: %Nadia.Model.Message{} = message},
-         history
-       ) do
-    echo_locally(message)
+  defp ack_and_reply(%Nadia.Model.Update{update_id: update_id} = upd, history) do
+    new_history =
+      case upd do
+        %Nadia.Model.Update{message: %Nadia.Model.Message{} = msg} when not is_nil(msg) ->
+          echo_locally(msg)
+          {reply_msg, new_history} = Bloom.Bot.MessageHandler.handle(msg, history)
 
-    case message.text do
-      nil ->
-        {update_id + 1, history}
-
-      _ ->
-        new_subhistory =
-          cond do
-            message.text |> String.starts_with?("/weather") ->
-              reply =
-                case message.text do
-                  "/weather " <> query ->
-                    Bloom.Weather.describe(query)
-                end
-
-              {:ok, my_message} =
-                Nadia.send_message(message.chat.id, reply,
-                  parse_mode: "Markdown",
-                  disable_web_page_preview: "True"
-                )
-
-              echo_locally(my_message)
-              @reset
-
-            message.text |> String.starts_with?("/eth") ->
-              reply =
-                case message.text do
-                  "/eth " <> eth_entity ->
-                    case eth_entity do
-                      "me" ->
-                        Bloom.Eth.describe("me", message.from.id)
-
-                      _ ->
-                        Bloom.Eth.describe(eth_entity)
-                    end
-                end
-
-              {:ok, my_message} = Nadia.send_message(message.chat.id, reply)
-              echo_locally(my_message)
-              @reset
-
-            message.text |> String.starts_with?("/lastfm") ->
-              reply =
-                case message.text do
-                  "/lastfm" ->
-                    Bloom.LastFM.describe(message.from.id)
-
-                  "/lastfm np " <> username ->
-                    Bloom.LastFM.get_recent(username)
-
-                  "/lastfm ident " <> username ->
-                    Bloom.LastFM.User.memorize(message.from.id, String.trim(username))
-                    "ok"
-
-                  _ ->
-                    "get lost"
-                end
-
-              {:ok, my_message} = Nadia.send_message(message.chat.id, reply)
-              echo_locally(my_message)
-              @reset
-
-            message.text == Map.get(history, message.chat.id, @reset) && @double_echo ->
-              {:ok, my_message} = Nadia.send_message(message.chat.id, message.text)
-              echo_locally(my_message)
-              @reset
-
-            true ->
-              message.text
+          case reply_msg do
+            {:ok, reply_msg} -> echo_locally(reply_msg)
+            :none -> "No reply"
           end
 
-        with new_history = Map.put(history, message.chat.id, new_subhistory),
-          do: {update_id + 1, new_history}
-    end
-  end
+          new_history
 
-  defp ack_and_reply(%Nadia.Model.Update{update_id: update_id, message: message}, history)
-       when is_nil(message) do
-    echo_locally(message)
-    {update_id + 1, history}
+        %Nadia.Model.Update{inline_query: %Nadia.Model.InlineQuery{} = iq} when not is_nil(iq) ->
+          Bloom.Bot.InlineQueryHandler.handle(iq)
+          history
+
+        _ ->
+          IO.puts("skipped update")
+          history
+      end
+
+    {update_id + 1, new_history}
   end
 
   defp describe_message(%Nadia.Model.Message{} = message) do
-    "{#{describe_chat(message.chat)}} " <>
-      "[#{message.date |> DateTime.from_unix!() |> DateTime.to_iso8601()}] " <>
-      "<#{describe_user(message.from)}>" <>
-      "#{if length(message.photo) > 0, do: " [photo]"}" <>
-      "#{if message.text, do: " #{message.text}"}"
+    chat = describe_chat(message.chat)
+    date = message.date |> DateTime.from_unix!() |> DateTime.to_iso8601()
+    user = describe_user(message.from)
+
+    "{#{chat}} [#{date}] <#{user}>" <>
+      if(length(message.photo) > 0, do: " [photo]", else: "") <>
+      if(message.text, do: " #{message.text}", else: "")
   end
 
   defp describe_message(_) do

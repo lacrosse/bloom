@@ -1,4 +1,4 @@
-defmodule Bloom.Eth.User do
+defmodule Bloom.External.Eth.User do
   @initial %{
   }
 

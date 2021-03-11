@@ -1,4 +1,4 @@
-defmodule Bloom.Weather do
+defmodule Bloom.External.Weather do
   @darksky_secret_key Application.fetch_env!(:bloom, :darksky_secret_key)
   @opencage_api_key Application.fetch_env!(:bloom, :opencage_api_key)
 

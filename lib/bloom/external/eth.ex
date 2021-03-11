@@ -1,4 +1,4 @@
-defmodule Bloom.Eth do
+defmodule Bloom.External.Eth do
   @endpoint "https://api.etherscan.io/api"
 
   def describe(<<"0x", address::binary-size(40)>>) do
@@ -20,7 +20,7 @@ defmodule Bloom.Eth do
   end
 
   def describe("me", telegram_user_id) do
-    case Bloom.Eth.User.addresses(telegram_user_id) do
+    case Bloom.External.Eth.User.addresses(telegram_user_id) do
       nil ->
         "I don't know you."
 

@@ -1,16 +1,11 @@
-defmodule Bloom.LastFM do
+defmodule Bloom.External.LastFM do
   @endpoint "https://ws.audioscrobbler.com/2.0"
   @api_key Application.fetch_env!(:bloom, :lastfm_api_key)
 
   def describe(telegram_user_id) do
-    case Bloom.LastFM.User.username(telegram_user_id) do
-      nil ->
-        IO.inspect("Telegram user #{telegram_user_id} tried to use last.fm")
-        "это кто"
-
-      username ->
-        get_recent(username)
-    end
+    with_lastfm_username(telegram_user_id, fn username ->
+      get_recent(username)
+    end)
   end
 
   def get_recent(username) do
@@ -42,17 +37,37 @@ defmodule Bloom.LastFM do
     end
   end
 
-  def get_artist(username, artist) do
-    case(request_artist_getinfo(username, artist)) do
-      {:ok, %HTTPoison.Response{body: body}} ->
-        with {:ok, parsed} = Poison.decode(body),
-             stats <- parsed["artist"]["stats"],
-             count = stats["userplaycount"] do
-          "#{username} scrobbled #{artist} #{count} times"
-        end
+  def get_artist(telegram_user_id, artist) do
+    with_lastfm_username(telegram_user_id, fn username ->
+      case(request_artist_getinfo(username, artist)) do
+        {:ok, %HTTPoison.Response{body: body}} ->
+          with {:ok, parsed} = Poison.decode(body),
+               stats <- parsed["artist"]["stats"],
+               count = stats["userplaycount"],
+               resp = "#{username} scrobbled #{artist} #{count} times" do
+            case count do
+              "0" ->
+                "#{resp} ¯\\_(ツ)_/¯"
 
-      {:error, _error} ->
-        "::("
+              _ ->
+                resp
+            end
+          end
+
+        {:error, _error} ->
+          "::("
+      end
+    end)
+  end
+
+  defp with_lastfm_username(telegram_user_id, expr) do
+    case Bloom.External.LastFM.User.username(telegram_user_id) do
+      nil ->
+        IO.inspect("Telegram user #{telegram_user_id} tried to use last.fm")
+        "это кто"
+
+      username ->
+        expr.(username)
     end
   end
 

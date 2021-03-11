@@ -1,4 +1,4 @@
-defmodule Bloom.LastFM.User do
+defmodule Bloom.External.LastFM.User do
   @db "lastfm_users.txt"
 
   def start_link do
