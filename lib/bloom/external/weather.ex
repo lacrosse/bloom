@@ -1,109 +1,71 @@
 defmodule Bloom.External.Weather do
+  require Bloom.External.Utils
+  alias Bloom.External.Utils
+
   @darksky_secret_key Application.fetch_env!(:bloom, :darksky_secret_key)
   @opencage_api_key Application.fetch_env!(:bloom, :opencage_api_key)
 
+  @spec describe(String.t()) :: Either.t(String.t())
   def describe(query), do: forecast(query)
 
+  defp wrap_data(%{"error" => error}), do: {:error, error}
+  defp wrap_data(data), do: {:ok, data}
+
   defp forecast(query) do
-    case query |> geocode_query() do
-      :error ->
-        "ошибка, ошибка"
+    with {:geocode, {:ok, coords_string}} <- {:geocode, geocode_query(query)},
+         excluded = Enum.join(~w[minutely hourly daily], ","),
+         url_query = URI.encode_query(%{exclude: excluded, lang: :ru, units: :si}),
+         url =
+           "https://api.darksky.net/forecast/#{@darksky_secret_key}/#{coords_string}/?#{url_query}",
+         {:darksky_fetch, {:ok, data}} <-
+           {:darksky_fetch, Utils.with_decode("darksky.net", HTTPoison.get(url))},
+         {:darksky, {:ok, result}} <- {:darksky, wrap_data(data)},
+         {:wellformed, {:ok, currently}} <- {:wellformed, Map.fetch(result, "currently")},
+         celsius = "#{currently["temperature"]}°C" do
+      summary =
+        currently
+        |> Map.fetch("summary")
+        |> Option.lpush([nil, ""])
+        |> Option.map(&String.downcase/1)
+        |> Option.unwrap()
+        |> List.wrap()
 
-      {:ok, coords_string} ->
-        url_query =
-          %{
-            exclude:
-              ~w[minutely hourly daily]
-              |> Enum.join(","),
-            lang: :ru,
-            units: :si
-          }
-          |> URI.encode_query()
+      temperature = ([celsius] ++ summary) |> Enum.join(", ")
 
-        url =
-          "https://api.darksky.net/forecast/#{@darksky_secret_key}/#{coords_string}/?#{url_query}"
+      alerts_block =
+        result
+        |> Map.fetch("alerts")
+        |> Option.push(nil)
+        |> Option.map(
+          &(&1
+            |> Enum.map(fn %{"title" => title, "uri" => url} -> "[#{title}](#{url})" end)
+            |> Enum.join("\n"))
+        )
+        |> Option.unwrap()
+        |> List.wrap()
 
-        case HTTPoison.get(url) do
-          {:ok, %HTTPoison.Response{body: body}} ->
-            case Poison.decode(body) do
-              {:ok, %{"error" => error}} ->
-                error
-
-              {:ok, parsed} ->
-                currently = parsed["currently"]
-                temperature = currently["temperature"]
-                temperature_string = "#{temperature}°C"
-
-                temperature_block =
-                  case currently["summary"] do
-                    nil ->
-                      [temperature_string]
-
-                    summary ->
-                      normalized_summary = summary |> String.downcase()
-                      ["#{temperature_string}, #{normalized_summary}"]
-                  end
-
-                alerts_block =
-                  case parsed["alerts"] do
-                    nil ->
-                      []
-
-                    [] ->
-                      []
-
-                    alerts ->
-                      alerts_description =
-                        alerts
-                        |> Enum.map(fn %{
-                                         "title" => title,
-                                         "description" => description,
-                                         "uri" => url
-                                       } ->
-                          "[#{title}](#{url})\n#{description}"
-                        end)
-                        |> Enum.join("\n")
-
-                      [alerts_description]
-                  end
-
-                (temperature_block ++ alerts_block)
-                |> Enum.join("\n\n")
-            end
-
-          {:error, _error} ->
-            "сорян(("
-        end
+      {:ok,
+       ([temperature] ++ alerts_block)
+       |> Enum.join("\n\n")}
+    else
+      {:geocode, {:error, error}} -> {:error, error}
+      {:darksky_fetch, {:error, error}} -> {:error, error}
+      {:darksky, {:error, _}} -> {:error, "darksky.net error"}
+      {:wellformed, :error} -> {:error, "darksky.net response is not well-formed"}
     end
   end
 
   # TODO
   defp geocode_query(query) do
-    escaped_query = query |> URI.encode()
-
-    url_query =
-      %{
-        key: @opencage_api_key,
-        q: escaped_query,
-        limit: 1
-      }
-      |> URI.encode_query()
-
-    url = "https://api.opencagedata.com/geocode/v1/json?#{url_query}"
-
-    case HTTPoison.get(url) do
-      {:ok, %HTTPoison.Response{body: body}} ->
-        case Poison.decode(body) do
-          {:ok, parsed} ->
-            case parsed["results"] do
-              [] ->
-                :error
-
-              [%{"geometry" => %{"lat" => lat, "lng" => lng}}] ->
-                latlng = "#{lat},#{lng}"
-                {:ok, latlng}
-            end
-        end
+    with url_query = URI.encode_query(%{key: @opencage_api_key, q: URI.encode(query), limit: 1}),
+         url = "https://api.opencagedata.com/geocode/v1/json?#{url_query}",
+         {:ok, data} <- Utils.with_decode("opencagedata.com", HTTPoison.get(url)),
+         {:ok, results} <- data |> Map.fetch("results"),
+         [result] = results,
+         {:ok, geometry} <- result |> Map.fetch("geometry"),
+         {:ok, lat} <- geometry |> Map.fetch("lat"),
+         {:ok, lng} <- geometry |> Map.fetch("lng") do
+      {:ok, "#{lat},#{lng}"}
     end
   end
 end

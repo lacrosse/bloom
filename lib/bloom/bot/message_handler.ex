@@ -1,10 +1,12 @@
 defmodule Bloom.Bot.MessageHandler do
+  alias Nadia.Model.Message
+
   @reset :reset
   @double_echo Application.fetch_env!(:bloom, :double_echo)
 
-  @spec handle(Nadia.Model.Message.t(), Bloom.Bot.history()) ::
-          {:none | {:ok, Nadia.Model.Message.t()}, Bloom.Bot.history()}
-  def handle(%Nadia.Model.Message{} = message, history) do
+  @spec handle(Message.t(), Bloom.Bot.history()) ::
+          {Bloom.Bot.opt_message(), Bloom.Bot.history()}
+  def handle(%Message{} = message, history) do
     case message.text do
       nil ->
         {:none, history}
@@ -26,16 +28,17 @@ defmodule Bloom.Bot.MessageHandler do
           end
 
         {reply_msg, new_subhistory} =
-          with false <- is_nil(reply_txt),
-               {:ok, reply_msg} <-
-                 Nadia.send_message(message.chat.id, reply_txt,
-                   parse_mode: "Markdown",
-                   disable_web_page_preview: "True"
-                 ) do
+          with {:reply_empty, false} <- {:reply_empty, is_nil(reply_txt)},
+               {:telegram, {:ok, reply_msg}} <-
+                 {:telegram,
+                  Nadia.send_message(message.chat.id, reply_txt,
+                    parse_mode: "Markdown",
+                    disable_web_page_preview: "True",
+                    reply_to_message_id: message.message_id
+                  )} do
             {{:ok, reply_msg}, @reset}
           else
-            _ ->
-              {:none, message.text}
+            _ -> {:none, message.text}
           end
 
         {reply_msg, Map.put(history, message.chat.id, new_subhistory)}

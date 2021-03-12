@@ -1,4 +1,6 @@
 defmodule Bloom.External.Eth.User do
+  use Agent
+
   @initial %{
   }
 
@@ -7,6 +9,6 @@ defmodule Bloom.External.Eth.User do
   end
 
   def addresses(id) do
-    Agent.get(__MODULE__, &Map.get(&1, id))
+    Agent.get(__MODULE__, &Map.fetch(&1, id))
   end
 end

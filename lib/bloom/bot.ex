@@ -1,5 +1,8 @@
 defmodule Bloom.Bot do
+  alias Nadia.Model.{User, Update, Message, InlineQuery}
+
   @type history :: %{integer => :reset | String.t()}
+  @type opt_message :: {:ok, Message.t()} | :none
 
   def run do
     :ok = flush()
@@ -44,10 +47,10 @@ defmodule Bloom.Bot do
 
   defp echo_locally(message), do: message |> describe_message() |> IO.puts()
 
-  defp ack_and_reply(%Nadia.Model.Update{update_id: update_id} = upd, history) do
+  defp ack_and_reply(%Update{update_id: update_id} = upd, history) do
     new_history =
       case upd do
-        %Nadia.Model.Update{message: %Nadia.Model.Message{} = msg} when not is_nil(msg) ->
+        %Update{message: %Message{} = msg} when not is_nil(msg) ->
           echo_locally(msg)
           {reply_msg, new_history} = Bloom.Bot.MessageHandler.handle(msg, history)
 
@@ -58,7 +61,7 @@ defmodule Bloom.Bot do
 
           new_history
 
-        %Nadia.Model.Update{inline_query: %Nadia.Model.InlineQuery{} = iq} when not is_nil(iq) ->
+        %Update{inline_query: %InlineQuery{} = iq} when not is_nil(iq) ->
           Bloom.Bot.InlineQueryHandler.handle(iq)
           history
 
@@ -70,7 +73,7 @@ defmodule Bloom.Bot do
     {update_id + 1, new_history}
   end
 
-  defp describe_message(%Nadia.Model.Message{} = message) do
+  defp describe_message(%Message{} = message) do
     chat = describe_chat(message.chat)
     date = message.date |> DateTime.from_unix!() |> DateTime.to_iso8601()
     user = describe_user(message.from)
@@ -88,7 +91,7 @@ defmodule Bloom.Bot do
     "#{chat.type}#{if chat.title, do: "##{chat.title}"}"
   end
 
-  defp describe_user(%Nadia.Model.User{first_name: f, last_name: l, username: u, id: id}) do
+  defp describe_user(%User{first_name: f, last_name: l, username: u, id: id}) do
     names =
       [f, l]
       |> Enum.map(&to_string/1)

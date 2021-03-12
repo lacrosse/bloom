@@ -1,29 +1,34 @@
 defmodule Bloom.Bot.InlineQueryHandler do
-  alias Nadia.Model
+  alias Nadia.Model.{InlineQuery, InlineQueryResult.Article, InputMessageContent.Text}
 
-  def handle(%Model.InlineQuery{from: user, query: query} = iq) do
+  @spec handle(Nadia.Model.InlineQuery.t()) :: :ok
+  def handle(%InlineQuery{from: user, query: query} = iq) do
     iq |> IO.inspect()
 
     case query do
       "lastfm" ->
-        text = Bloom.External.LastFM.describe(user.id)
-
-        result = %Model.InlineQueryResult.Article{
-          id: "93",
-          title: text,
-          input_message_content: %Model.InputMessageContent.Text{
+        with {:ok, text} <- Bloom.External.LastFM.describe(user.id) do
+          content = %Text{
             message_text: text,
             parse_mode: "Markdown"
           }
-        }
 
-        Nadia.answer_inline_query(iq.id, [result],
-          is_personal: true,
-          next_offset: "",
-          cache_time: 15
-        )
+          result = %Article{
+            id: "93",
+            title: text,
+            input_message_content: content
+          }
 
-        :ok
+          results = [result]
+
+          Nadia.answer_inline_query(iq.id, results,
+            is_personal: true,
+            next_offset: "",
+            cache_time: 15
+          )
+
+          :ok
+        end
 
       _ ->
         :ok

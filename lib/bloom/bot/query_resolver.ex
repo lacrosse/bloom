@@ -1,31 +1,33 @@
 defmodule Bloom.Bot.QueryResolver do
+  alias Bloom.External.{Weather, Eth, LastFM}
+
   @spec resolve(integer, String.t()) :: String.t()
   def resolve(telegram_user_id, full_query) do
     case full_query do
       "weather " <> query ->
-        Bloom.External.Weather.describe(query)
+        Weather.describe(query)
 
-      "eth me" ->
-        Bloom.External.Eth.describe("me", telegram_user_id)
+      "eth" ->
+        Eth.net_worth(telegram_user_id)
 
       "eth " <> eth_entity ->
-        Bloom.External.Eth.describe(eth_entity)
+        Eth.describe(eth_entity)
 
       "lastfm" ->
-        Bloom.External.LastFM.describe(telegram_user_id)
+        LastFM.describe(telegram_user_id)
 
       "lastfm np " <> username ->
-        Bloom.External.LastFM.get_recent(username)
-
-      "lastfm ident " <> username ->
-        Bloom.External.LastFM.User.memorize(telegram_user_id, String.trim(username))
-        "ok"
+        LastFM.get_recent(username)
 
       "lastfm artist " <> artist ->
-        Bloom.External.LastFM.get_artist(telegram_user_id, artist)
+        LastFM.get_artist(telegram_user_id, artist)
+
+      "lastfm ident " <> username ->
+        LastFM.User.memorize(telegram_user_id, String.trim(username))
 
       _ ->
-        "nah"
+        {:error, "I'm afraid I can't let you do that."}
     end
+    |> Either.unwrap()
   end
 end
