@@ -35,9 +35,9 @@ defmodule Bloom.Repo.Migrations.MigrateUsers do
     )
 
     Bloom.External.LastFM.User.table_for_db()
-    |> Enum.map(fn {telegram_id, lastfm_username} ->
+    |> Enum.map(fn {id, lastfm_username} ->
       %User{}
-      |> User.changeset(%{telegram_id: telegram_id, lastfm_username: lastfm_username})
+      |> User.changeset(%{id: id, lastfm_username: lastfm_username})
       |> Bloom.Repo.insert()
     end)
   end

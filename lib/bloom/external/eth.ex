@@ -1,11 +1,13 @@
 defmodule Bloom.External.Eth do
-  alias __MODULE__.User
+  alias Bloom.EthAddress
 
   @endpoint "https://api.etherscan.io/api"
 
   @spec net_worth(integer) :: Either.t(String.t())
   def net_worth(telegram_user_id) do
-    with {:addresses, {:ok, addresses}} <- {:addresses, User.addresses(telegram_user_id)},
+    with {:addresses, {:ok, addresses}} <-
+           {:addresses, EthAddress.all_of_user(telegram_user_id)},
+         {:none, false} <- {:none, Enum.empty?(addresses)},
          {:balance, {:ok, results}} <- {:balance, account_balancemulti(addresses)} do
       ether =
         results
@@ -16,6 +18,7 @@ defmodule Bloom.External.Eth do
       {:ok, "Your ethereal net worth is #{ether} Ξ."}
     else
       {:addresses, :error} -> {:error, "I don't know you."}
+      {:none, true} -> {:error, "You don't have any ETH addresses."}
       {:balance, :error} -> {:error, "I can't see the balance."}
     end
   end

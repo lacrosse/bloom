@@ -88,7 +88,7 @@ defmodule Bloom.External.LastFM do
 
   def memorize(telegram_user_id, username) do
     case Repo.get(User, telegram_user_id) do
-      nil -> %User{telegram_id: telegram_user_id}
+      nil -> %User{id: telegram_user_id}
       user -> user
     end
     |> User.changeset(%{lastfm_username: username})

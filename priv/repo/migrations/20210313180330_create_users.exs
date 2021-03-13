@@ -3,7 +3,7 @@ defmodule Bloom.Repo.Migrations.CreateUsers do
 
   def change do
     create table(:users, primary_key: false) do
-      add(:telegram_id, :integer, primary_key: true)
+      add(:id, :integer, primary_key: true)
       add(:lastfm_username, :string, size: 64)
     end
   end

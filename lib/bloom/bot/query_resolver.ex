@@ -1,4 +1,5 @@
 defmodule Bloom.Bot.QueryResolver do
+  alias Bloom.EthAddress
   alias Bloom.External.{Weather, Eth, LastFM}
 
   @spec resolve(integer, String.t()) :: String.t()
@@ -9,6 +10,15 @@ defmodule Bloom.Bot.QueryResolver do
 
       "eth" ->
         Eth.net_worth(telegram_user_id)
+
+      "eth list" ->
+        EthAddress.all_of_user_reply(telegram_user_id)
+
+      "eth list add " <> hex ->
+        EthAddress.add_to_user_reply(telegram_user_id, hex)
+
+      "eth list rm " <> hex ->
+        EthAddress.rm_from_user_reply(telegram_user_id, hex)
 
       "eth " <> eth_entity ->
         Eth.describe(eth_entity)

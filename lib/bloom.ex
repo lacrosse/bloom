@@ -9,10 +9,6 @@ defmodule Bloom do
         id: Bloom.Bot.Task,
         start: {Task, :start_link, [Bloom.Bot, :run, []]}
       },
-      %{
-        id: Bloom.External.Eth.User,
-        start: {Bloom.External.Eth.User, :start_link, []}
-      },
       Bloom.Repo
     ]
 
