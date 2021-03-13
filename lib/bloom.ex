@@ -13,10 +13,7 @@ defmodule Bloom do
         id: Bloom.External.Eth.User,
         start: {Bloom.External.Eth.User, :start_link, []}
       },
-      %{
-        id: Bloom.External.LastFM.User,
-        start: {Bloom.External.LastFM.User, :start_link, []}
-      }
+      Bloom.Repo
     ]
 
     {:ok, _pid} =

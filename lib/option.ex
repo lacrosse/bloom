@@ -11,6 +11,9 @@ defmodule Option do
   def flat_map({:ok, x}, f), do: f.(x)
   def flat_map(:error, _), do: :error
 
+  def wrap(nil), do: :error
+  def wrap(val), do: {:ok, val}
+
   def unwrap(opt, bottom \\ nil)
   def unwrap({:ok, x}, _), do: x
   def unwrap(:error, bottom), do: bottom

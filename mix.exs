@@ -13,7 +13,7 @@ defmodule Bloom.Mixfile do
   end
 
   def application do
-    [extra_applications: [:logger], mod: {Bloom, []}]
+    [extra_applications: [:logger, :ecto], mod: {Bloom, []}]
   end
 
   defp deps do
@@ -22,7 +22,8 @@ defmodule Bloom.Mixfile do
       {:httpoison, "~> 1.7.0"},
       {:poison, "~> 3.1", runtime: false},
       {:decimal, "~> 1.0", runtime: false},
-      {:jason, "~> 1.2.2"}
+      {:jason, "~> 1.2.2"},
+      {:sqlite_ecto2, "~> 2.2"}
     ]
   end
 end

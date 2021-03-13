@@ -23,7 +23,7 @@ defmodule Bloom.Bot.QueryResolver do
         LastFM.get_artist(telegram_user_id, artist)
 
       "lastfm ident " <> username ->
-        LastFM.User.memorize(telegram_user_id, String.trim(username))
+        LastFM.memorize(telegram_user_id, String.trim(username))
 
       _ ->
         {:error, "I'm afraid I can't let you do that."}

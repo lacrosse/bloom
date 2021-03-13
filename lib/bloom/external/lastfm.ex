@@ -1,5 +1,6 @@
 defmodule Bloom.External.LastFM do
   require Bloom.External.Utils
+  alias Bloom.{Repo, User}
 
   @endpoint "https://ws.audioscrobbler.com/2.0"
   @api_key Application.fetch_env!(:bloom, :lastfm_api_key)
@@ -75,9 +76,25 @@ defmodule Bloom.External.LastFM do
   defp wrap_data(%{"error" => _, "message" => message}), do: {:error, message}
   defp wrap_data(res), do: {:ok, res}
 
-  defp lastfm_username(telegram_user_id) do
-    Bloom.External.LastFM.User.username(telegram_user_id)
+  def lastfm_username(telegram_user_id) do
+    case Repo.get(User, telegram_user_id) do
+      nil -> nil
+      user -> user.lastfm_username
+    end
+    |> Option.wrap()
+    |> Option.push("")
     |> Option.to_either("I don't know you.")
+  end
+
+  def memorize(telegram_user_id, username) do
+    case Repo.get(User, telegram_user_id) do
+      nil -> %User{telegram_id: telegram_user_id}
+      user -> user
+    end
+    |> User.changeset(%{lastfm_username: username})
+    |> Repo.insert_or_update()
+    |> Either.left_map(fn _ -> "Nice to meet you." end)
+    |> Either.right_map(fn _ -> "Something went wrong" end)
   end
 
   defp request_getrecenttracks(username),
