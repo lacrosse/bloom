@@ -25,9 +25,9 @@ defmodule Bloom.External.Weather do
       summary =
         currently
         |> Map.fetch("summary")
-        |> Option.lpush([nil, ""])
-        |> Option.map(&String.downcase/1)
-        |> Option.unwrap()
+        |> Maybe.push_reduce([nil, ""])
+        |> Maybe.map(&String.downcase/1)
+        |> Maybe.unwrap()
         |> List.wrap()
 
       temperature = ([celsius] ++ summary) |> Enum.join(", ")
@@ -35,13 +35,13 @@ defmodule Bloom.External.Weather do
       alerts_block =
         result
         |> Map.fetch("alerts")
-        |> Option.push(nil)
-        |> Option.map(
+        |> Maybe.push(nil)
+        |> Maybe.map(
           &(&1
             |> Enum.map(fn %{"title" => title, "uri" => url} -> "[#{title}](#{url})" end)
             |> Enum.join("\n"))
         )
-        |> Option.unwrap()
+        |> Maybe.unwrap()
         |> List.wrap()
 
       {:ok,

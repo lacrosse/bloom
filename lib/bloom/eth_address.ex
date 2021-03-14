@@ -24,18 +24,18 @@ defmodule Bloom.EthAddress do
     "0x" <> Base.encode16(fp, case: :lower)
   end
 
-  @spec all_of_user(integer) :: Option.t([String.t()])
+  @spec all_of_user(integer) :: Maybe.t([String.t()])
   def all_of_user(id) do
     from(a in __MODULE__, where: a.user_id == ^id)
     |> Repo.all()
     |> Enum.map(&bin_to_hex(&1.public_key_fingerprint))
-    |> Option.wrap()
+    |> Maybe.wrap()
   end
 
   @spec all_of_user_reply(integer) :: Either.t(String.t())
   def all_of_user_reply(id) do
     all_of_user(id)
-    |> Option.map(
+    |> Maybe.map(
       &(&1
         |> case do
           [] -> ["You don't have any ETH addresses."]
@@ -43,7 +43,7 @@ defmodule Bloom.EthAddress do
         end
         |> Enum.join("\n"))
     )
-    |> Option.to_either("Something went wrong.")
+    |> Maybe.to_either("Something went wrong.")
   end
 
   @spec add_to_user_reply(integer, String.t()) :: Either.t(String.t())
@@ -51,20 +51,20 @@ defmodule Bloom.EthAddress do
     %__MODULE__{}
     |> changeset(%{user_id: id, public_key_fingerprint_hex: hex})
     |> Repo.insert()
-    |> Either.left_map(&"You claimed #{bin_to_hex(&1.public_key_fingerprint)}.")
-    |> Either.right_map(fn _ -> "Something went wrong." end)
+    |> Either.map_ok(&"You claimed #{bin_to_hex(&1.public_key_fingerprint)}.")
+    |> Either.map_error(fn _ -> "Something went wrong." end)
   end
 
   @spec rm_from_user_reply(integer, String.t()) :: Either.t(String.t())
   def rm_from_user_reply(id, hex) do
     hex
     |> hex_to_bin()
-    |> Option.flat_map(fn bin ->
+    |> Maybe.flat_map(fn bin ->
       from(a in __MODULE__, where: a.user_id == ^id and a.public_key_fingerprint == ^bin)
       |> Repo.one()
-      |> Option.wrap()
+      |> Maybe.wrap()
     end)
-    |> Option.to_either("This is not your address.")
+    |> Maybe.to_either("This is not your address.")
     |> Either.flat_map(
       &Repo.delete/1,
       &"You disowned #{bin_to_hex(&1.public_key_fingerprint)}.",

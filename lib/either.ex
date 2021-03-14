@@ -8,18 +8,18 @@ defmodule Either do
   def unwrap({:ok, v}), do: v
   def unwrap({:error, v}), do: v
 
-  @spec left_map(t(a, b), (a -> c)) :: t(c, b)
+  @spec map_ok(t(a, b), (a -> c)) :: t(c, b)
         when a: any, b: any, c: any
-  def left_map({:ok, v}, f), do: {:ok, f.(v)}
-  def left_map(ei, _), do: ei
+  def map_ok({:ok, v}, f), do: {:ok, f.(v)}
+  def map_ok(ei, _), do: ei
 
-  @spec right_map(t(a, b), (b -> c)) :: t(a, c)
+  @spec map_error(t(a, b), (b -> c)) :: t(a, c)
         when a: any, b: any, c: any
-  def right_map({:error, v}, f), do: {:error, f.(v)}
-  def right_map(ei, _), do: ei
+  def map_error({:error, v}, f), do: {:error, f.(v)}
+  def map_error(ei, _), do: ei
 
   @spec flat_map(t(a, b), (a -> t(c, d)), (c -> e), (d -> b)) :: t(e, b)
         when a: any, b: any, c: any, d: any, e: any
-  def flat_map({:ok, v}, f, left_f, right_f), do: f.(v) |> left_map(left_f) |> right_map(right_f)
+  def flat_map({:ok, v}, f, left_f, right_f), do: f.(v) |> map_ok(left_f) |> map_error(right_f)
   def flat_map(ei, _, _, _), do: ei
 end

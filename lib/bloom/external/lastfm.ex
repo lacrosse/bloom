@@ -30,9 +30,9 @@ defmodule Bloom.External.LastFM do
       emoji =
         track
         |> Map.fetch("@attr")
-        |> Option.flat_map(&Map.fetch(&1, "nowplaying"))
-        |> Option.map(&(&1 == "true"))
-        |> Option.unwrap(false)
+        |> Maybe.flat_map(&Map.fetch(&1, "nowplaying"))
+        |> Maybe.map(&(&1 == "true"))
+        |> Maybe.unwrap(false)
         |> (fn x -> if x, do: "🎧", else: "🎶" end).()
 
       {:ok, "#{emoji} #{artist_name} – #{title}"}
@@ -81,9 +81,9 @@ defmodule Bloom.External.LastFM do
       nil -> nil
       user -> user.lastfm_username
     end
-    |> Option.wrap()
-    |> Option.push("")
-    |> Option.to_either("I don't know you.")
+    |> Maybe.wrap()
+    |> Maybe.push("")
+    |> Maybe.to_either("I don't know you.")
   end
 
   def memorize(telegram_user_id, username) do
@@ -93,8 +93,8 @@ defmodule Bloom.External.LastFM do
     end
     |> User.changeset(%{lastfm_username: username})
     |> Repo.insert_or_update()
-    |> Either.left_map(fn _ -> "Nice to meet you." end)
-    |> Either.right_map(fn _ -> "Something went wrong" end)
+    |> Either.map_ok(fn _ -> "Nice to meet you." end)
+    |> Either.map_error(fn _ -> "Something went wrong" end)
   end
 
   defp request_getrecenttracks(username),

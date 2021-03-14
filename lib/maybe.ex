@@ -1,5 +1,5 @@
-defmodule Option do
-  def lpush(opt, l), do: Enum.reduce(l, opt, &push(&2, &1))
+defmodule Maybe do
+  def push_reduce(opt, l), do: Enum.reduce(l, opt, &push(&2, &1))
 
   def push({:ok, x}, x), do: :error
   def push(:error, _), do: :error
@@ -14,9 +14,7 @@ defmodule Option do
   def wrap(nil), do: :error
   def wrap(val), do: {:ok, val}
 
-  def unwrap(opt, bottom \\ nil)
-  def unwrap({:ok, x}, _), do: x
-  def unwrap(:error, bottom), do: bottom
+  def unwrap(opt, bottom \\ nil), do: opt |> to_either(bottom) |> Either.unwrap()
 
   def to_either({:ok, _} = opt, _), do: opt
   def to_either(:error, msg), do: {:error, msg}
