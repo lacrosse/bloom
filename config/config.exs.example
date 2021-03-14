@@ -1,11 +1,17 @@
 use Mix.Config
 
 config :nadia,
-  token: "telegram_api_token"
+  token: "telegram_api_token",
+  recv_timeout: 20
 
 config :bloom,
+  ecto_repos: [Bloom.Repo],
   flush: true,
   double_echo: true,
-  lastfm_api_key: true,
-  darksky_secret_key: true,
-  opencage_api_key: true
+  lastfm_api_key: "key",
+  darksky_secret_key: "key",
+  opencage_api_key: "key"
+
+config :bloom, Bloom.Repo,
+  adapter: Sqlite.Ecto2,
+  database: "db/db.sqlite3"

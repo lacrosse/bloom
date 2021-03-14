@@ -1,3 +1,3 @@
 # Bloom
 
-A simple double-echo Telegram bot written in Elixir.
+A rather unsophisticated Telegram bot.
