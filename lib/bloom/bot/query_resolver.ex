@@ -3,7 +3,7 @@ defmodule Bloom.Bot.QueryResolver do
   alias Bloom.External.{Weather, Eth, LastFM}
 
   @spec resolve(integer, String.t()) :: String.t()
-  def resolve(telegram_user_id, full_query) do
+  def resolve(telegram_user_id, full_query, opts \\ []) do
     case full_query do
       "weather " <> query ->
         Weather.describe(query)
@@ -36,7 +36,10 @@ defmodule Bloom.Bot.QueryResolver do
         LastFM.memorize(telegram_user_id, String.trim(username))
 
       _ ->
-        {:error, "I'm afraid I can't let you do that."}
+        case String.match?(full_query, ~r/^\w+(\s+\w+)*\/$/u) do
+          true -> {:error, "I don't know how to react, but please continue."}
+          false -> {:error, "I'm afraid I can't let you do that."}
+        end
     end
     |> Either.unwrap()
   end
