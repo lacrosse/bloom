@@ -38,12 +38,7 @@ defmodule Bloom.Bot.QueryResolver do
         LastFM.memorize(telegram_user_id, String.trim(username))
 
       _ ->
-        case String.match?(full_query, ~r/^\w+(\s+\w+)*\/$/u) do
-          true -> {:error, "I don't know how to react, but please continue."}
-          false -> {:error, "I'm afraid I can't let you do that."}
-        end
-        |> Either.map_ok(&{&1, false})
-        |> Either.map_error(&{&1, false})
+        {:error, {nil, false}}
     end
     |> Either.unwrap()
   end

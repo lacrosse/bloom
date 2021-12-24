@@ -27,19 +27,26 @@ defmodule Bloom.Bot.MessageHandler do
           end
 
         {reply_msg, new_subhistory} =
-          with {:reply_empty, false} <- {:reply_empty, is_nil(reply_txt)},
-               {:telegram, {:ok, reply_msg}} <-
-                 {:telegram,
-                  Nadia.send_message(message.chat.id, reply_txt,
-                    parse_mode: if(enable_markdown, do: "Markdown", else: nil),
-                    disable_web_page_preview: "True",
-                    reply_to_message_id: reply_to_id
-                  )} do
-            {{:ok, reply_msg}, @reset}
-          else
-            err ->
-              {reply_txt, err} |> IO.inspect()
+          case reply_txt do
+            nil ->
               {:none, text}
+
+            _ ->
+              result =
+                Nadia.send_message(message.chat.id, reply_txt,
+                  parse_mode: if(enable_markdown, do: "Markdown", else: nil),
+                  disable_web_page_preview: "True",
+                  reply_to_message_id: reply_to_id
+                )
+
+              case result do
+                {:ok, _} ->
+                  {result, @reset}
+
+                _ ->
+                  {reply_txt, result} |> IO.inspect()
+                  {:none, text}
+              end
           end
 
         {reply_msg, Map.put(history, message.chat.id, new_subhistory)}
