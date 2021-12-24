@@ -3,6 +3,7 @@ defmodule Bloom.Bot do
 
   @type history :: %{integer => :reset | String.t()}
   @type opt_message :: {:ok, Message.t()} | :none
+  @type resolution :: {String.t(), boolean()}
 
   def run do
     :ok = flush()

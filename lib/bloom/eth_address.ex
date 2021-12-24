@@ -32,7 +32,7 @@ defmodule Bloom.EthAddress do
     |> Maybe.wrap()
   end
 
-  @spec all_of_user_reply(integer) :: Either.t(String.t())
+  @spec all_of_user_reply(integer) :: Either.t(Bloom.Bot.resolution())
   def all_of_user_reply(id) do
     all_of_user(id)
     |> Maybe.map(
@@ -44,18 +44,22 @@ defmodule Bloom.EthAddress do
         |> Enum.join("\n"))
     )
     |> Maybe.to_either("Something went wrong.")
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
-  @spec add_to_user_reply(integer, String.t()) :: Either.t(String.t())
+  @spec add_to_user_reply(integer, String.t()) :: Either.t(Bloom.Bot.resolution())
   def add_to_user_reply(id, hex) do
     %__MODULE__{}
     |> changeset(%{user_id: id, public_key_fingerprint_hex: hex})
     |> Repo.insert()
     |> Either.map_ok(&"You claimed #{bin_to_hex(&1.public_key_fingerprint)}.")
     |> Either.map_error(fn _ -> "Something went wrong." end)
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
-  @spec rm_from_user_reply(integer, String.t()) :: Either.t(String.t())
+  @spec rm_from_user_reply(integer, String.t()) :: Either.t(Bloom.Bot.resolution())
   def rm_from_user_reply(id, hex) do
     hex
     |> hex_to_bin()
@@ -70,6 +74,8 @@ defmodule Bloom.EthAddress do
       &"You disowned #{bin_to_hex(&1.public_key_fingerprint)}.",
       fn _ -> "Something went wrong." end
     )
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
   defp hex_to_bin(raw_hex) do

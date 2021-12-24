@@ -5,8 +5,12 @@ defmodule Bloom.External.Weather do
   @darksky_secret_key Application.fetch_env!(:bloom, :darksky_secret_key)
   @opencage_api_key Application.fetch_env!(:bloom, :opencage_api_key)
 
-  @spec describe(String.t()) :: Either.t(String.t())
-  def describe(query), do: forecast(query)
+  @spec describe(String.t()) :: Either.t(Bloom.Bot.resolution())
+  def describe(query) do
+    forecast(query)
+    |> Either.map_ok(&{&1, true})
+    |> Either.map_error(&{&1, true})
+  end
 
   defp wrap_data(%{"error" => error}), do: {:error, error}
   defp wrap_data(data), do: {:ok, data}

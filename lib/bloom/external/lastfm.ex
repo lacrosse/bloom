@@ -18,7 +18,7 @@ defmodule Bloom.External.LastFM do
     end
   end
 
-  @spec get_recent(String.t()) :: Either.t(String.t())
+  @spec get_recent(String.t()) :: Either.t(Bloom.Bot.resolution())
   def get_recent(username) do
     with {:decode, {:ok, data}} <- {:decode, decode(request_getrecenttracks(username))},
          {:wf, {:ok, recenttracks}} <- {:wf, data |> Map.fetch("recenttracks")},
@@ -40,12 +40,15 @@ defmodule Bloom.External.LastFM do
       {:decode, err} -> err
       {:wf, _} -> {:error, "Response is not well-formed"}
     end
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
-  @spec get_artist(integer, any) :: Either.t(String.t())
+  @spec get_artist(integer, any) :: Either.t(Bloom.Bot.resolution())
   def get_artist(telegram_user_id, artist) do
     with {:ok, username} <- lastfm_username(telegram_user_id) do
-      with {:decode, {:ok, data}} <- {:decode, decode(request_artist_getinfo(username, artist))},
+      with {:decode, {:ok, data}} <-
+             {:decode, decode(request_artist_getinfo(username, artist))},
            {:wf, {:ok, artist}} <- {:wf, data |> Map.fetch("artist")},
            {:wf, {:ok, artist_name}} <- {:wf, artist |> Map.fetch("name")},
            {:wf, {:ok, stats}} <- {:wf, artist |> Map.fetch("stats")},
@@ -61,10 +64,12 @@ defmodule Bloom.External.LastFM do
         {:decode, err} -> err
         {:wf, _} -> {:error, "Response is not well-formed"}
       end
+      |> Either.map_ok(&{&1, false})
+      |> Either.map_error(&{&1, false})
     end
   end
 
-  @spec describe(integer) :: Either.t(String.t())
+  @spec describe(integer) :: Either.t(Bloom.Bot.resolution())
   def describe(telegram_user_id) do
     with {:ok, username} <- lastfm_username(telegram_user_id),
          do: get_recent(username)
@@ -77,11 +82,9 @@ defmodule Bloom.External.LastFM do
   defp wrap_data(res), do: {:ok, res}
 
   def lastfm_username(telegram_user_id) do
-    case Repo.get(User, telegram_user_id) do
-      nil -> nil
-      user -> user.lastfm_username
-    end
+    Repo.get(User, telegram_user_id)
     |> Maybe.wrap()
+    |> Maybe.map(& &1.lastfm_username)
     |> Maybe.push("")
     |> Maybe.to_either("I don't know you.")
   end

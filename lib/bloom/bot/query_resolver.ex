@@ -2,8 +2,10 @@ defmodule Bloom.Bot.QueryResolver do
   alias Bloom.EthAddress
   alias Bloom.External.{Weather, Eth, LastFM}
 
-  @spec resolve(integer, String.t()) :: String.t()
-  def resolve(telegram_user_id, full_query, opts \\ []) do
+  @spec resolve(Nadia.Model.Message.t(), String.t()) :: Bloom.Bot.resolution()
+  def resolve(message, full_query, opts \\ []) do
+    telegram_user_id = message.from.id
+
     case full_query do
       "weather " <> query ->
         Weather.describe(query)
@@ -40,6 +42,8 @@ defmodule Bloom.Bot.QueryResolver do
           true -> {:error, "I don't know how to react, but please continue."}
           false -> {:error, "I'm afraid I can't let you do that."}
         end
+        |> Either.map_ok(&{&1, false})
+        |> Either.map_error(&{&1, false})
     end
     |> Either.unwrap()
   end

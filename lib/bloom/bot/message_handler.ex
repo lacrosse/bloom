@@ -12,21 +12,18 @@ defmodule Bloom.Bot.MessageHandler do
         {:none, history}
 
       _ ->
-        {reply_txt, reply_to_id} =
+        reply_to_id = message.message_id
+
+        {reply_txt, enable_markdown} =
           case text do
             "/" <> slash_query ->
-              {Bloom.Bot.QueryResolver.resolve(message.from.id, slash_query,
-                 reply_to: reply_to_message
-               ), message.message_id}
+              Bloom.Bot.QueryResolver.resolve(message, slash_query, reply_to: reply_to_message)
 
             _ ->
               {cond do
-                 text == Map.get(history, message.chat.id, @reset) && @double_echo ->
-                   text
-
-                 true ->
-                   nil
-               end, message.message_id}
+                 text == Map.get(history, message.chat.id, @reset) && @double_echo -> text
+                 true -> nil
+               end, false}
           end
 
         {reply_msg, new_subhistory} =
@@ -34,13 +31,15 @@ defmodule Bloom.Bot.MessageHandler do
                {:telegram, {:ok, reply_msg}} <-
                  {:telegram,
                   Nadia.send_message(message.chat.id, reply_txt,
-                    parse_mode: "Markdown",
+                    parse_mode: if(enable_markdown, do: "Markdown", else: nil),
                     disable_web_page_preview: "True",
                     reply_to_message_id: reply_to_id
                   )} do
             {{:ok, reply_msg}, @reset}
           else
-            _ -> {:none, text}
+            err ->
+              {reply_txt, err} |> IO.inspect()
+              {:none, text}
           end
 
         {reply_msg, Map.put(history, message.chat.id, new_subhistory)}

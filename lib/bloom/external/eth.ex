@@ -3,7 +3,7 @@ defmodule Bloom.External.Eth do
 
   @endpoint "https://api.etherscan.io/api"
 
-  @spec net_worth(integer) :: Either.t(String.t())
+  @spec net_worth(integer) :: Either.t(Bloom.Bot.resolution())
   def net_worth(telegram_user_id) do
     with {:addresses, {:ok, addresses}} <-
            {:addresses, EthAddress.all_of_user(telegram_user_id)},
@@ -21,11 +21,11 @@ defmodule Bloom.External.Eth do
       {:none, true} -> {:error, "You don't have any ETH addresses."}
       {:balance, :error} -> {:error, "I can't see the balance."}
     end
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
-  @spec describe(String.t()) :: Either.t(String.t())
-  def describe(entity)
-
+  @spec describe(String.t()) :: Either.t(Bloom.Bot.resolution())
   def describe(<<"0x", _::binary-size(40)>> = address) do
     case account_balance(address) do
       {:ok, wei} ->
@@ -34,14 +34,20 @@ defmodule Bloom.External.Eth do
       :error ->
         {:ok, "This looks like an Ethereum account."}
     end
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
   def describe(<<"0x", _txid::binary-size(64)>>) do
     {:ok, "This looks like an Ethereum transaction."}
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
   def describe(_) do
     {:error, "I don't know what this is."}
+    |> Either.map_ok(&{&1, false})
+    |> Either.map_error(&{&1, false})
   end
 
   defp wei_to_ether(wei) do
